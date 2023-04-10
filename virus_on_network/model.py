@@ -1,7 +1,7 @@
 import math
 from enum import Enum
 import networkx as nx
-from virus_on_network import server
+#from virus_on_network import server
 import mesa
 import csv
 import copy
@@ -10,6 +10,7 @@ from datetime import date
 import pandas as pd
 import random
 import numpy as np
+from scipy.stats import powerlaw
 
 t = time.localtime()
 current_time = time.strftime("%H:%M:%S", t)
@@ -93,7 +94,7 @@ class VirusOnNetwork(mesa.Model):
         self.num_nodes = num_nodes
         prob = avg_node_degree / self.num_nodes
         
-        self.G = nx.erdos_renyi_graph(n=self.num_nodes, p=prob, directed=True)
+        self.G = nx.empty_graph(n=self.num_nodes, create_using=nx.DiGraph())
         
         self.grid = mesa.space.NetworkGrid(self.G)
         self.schedule = mesa.time.RandomActivation(self)
@@ -194,8 +195,21 @@ class VirusOnNetwork(mesa.Model):
         self.running = True
         self.datacollector.collect(self)
 
+        with open('edgelist.csv', 'r') as f:
+            csv_reader=csv.reader(f, delimiter='|')
+            for row in csv_reader:
+                for element in row:
+                    if element != '':
+                        node_1=str(element)
+                        node_1=element.split(',')[0]
+                        node_2=element.split(',')[-1]
+                        #print(int(node_1), int(node_2))
+                        self.G.add_edge(int(node_1),int(node_2))
+
+        #print(self.G.edges)
         def create_bidirectional_edges(G):
             edge_tuple_list=[]
+            print(G.edges)
             for edge in G.edges:
                 x=str(edge)
                 x=x[1:]
@@ -208,7 +222,7 @@ class VirusOnNetwork(mesa.Model):
             print(len(edge_tuple_list))
             G.add_edges_from(edge_tuple_list)
 
-        with open('weighted_edgelist.csv', 'w') as f:
+        '''with open('weighted_edgelist.csv', 'w') as f:
             def create_bidirectional_edge_weights(G):
                 weighted_list = []
                 #print("weighted list")          
@@ -231,16 +245,29 @@ class VirusOnNetwork(mesa.Model):
                         f.write(',\n')
                    
                 print("length of weighted edge list")
-                print(len(weighted_list))    
+                print(len(weighted_list)) '''  
 
-        print("\nNumber of Edges pre bidirectional")
-        print(self.G.number_of_edges())                    
-        create_bidirectional_edges(self.G)
+        def create_bidirectional_edge_weights(G):
+            for node in G.nodes:
+                neigh=G.neighbors(node)
+                num_of_node_neighbors=len(list(neigh))
+                list_of_weights=np.random.power(1, num_of_node_neighbors)
+                for i,neighbor in enumerate(G.neighbors(node)):
+                    #powerlaw distribution 
+                    G[node][neighbor]['weight']=list_of_weights[i]
+                    #uniform distribution
+                    #G[node][neighbor]['weight']=np.random.power(1, num_of_node_neighbors)
+
+                    print(G[node][neighbor]['weight'])
+
+        #print("\nNumber of Edges pre bidirectional")
+        #print(self.G.number_of_edges())                    
+        #create_bidirectional_edges(self.G)
         create_bidirectional_edge_weights(self.G)
-        print("Number of Edges")
-        print(self.G.number_of_edges())
+        #print("Number of Edges")
+        #print(self.G.number_of_edges())
         
-        with open('edgelist.csv', 'w') as f:
+        '''with open('edgelist.csv', 'w') as f:
             print("edge list without weights")
             for i in self.G.edges:
                 #print(i)
@@ -252,7 +279,7 @@ class VirusOnNetwork(mesa.Model):
                     f.write(str(u))
                     if (g%2) != 0:
                         f.write(',')
-            f.write('|')
+            f.write('|')'''
 
         with open('centrality.csv', 'w') as f:
             f.write('Node: Degree Centrality\n')
@@ -474,8 +501,7 @@ class VirusAgent(mesa.Agent, VirusOnNetwork):
                 a.misinformation[i]['exposed'] = 'yes'
 
     with open('infected_by.csv', 'w') as f:
-        f.write('node, infected by, node number, with virus, virus number, infected by, node number, with virus, virus number, infected by, node number, with virus, virus number, infected by, node number, with virus, virus number, infected by, node number, with virus, virus number\n\n')
-
+        #f.write('node, infected by, node number, with virus, number\n')
         def try_to_infect_neighbors(self, i):
             self.step_number += 1
             neighbors_nodes = self.model.grid.get_neighbors(self.pos, include_center=True)
@@ -492,7 +518,9 @@ class VirusAgent(mesa.Agent, VirusOnNetwork):
                 #self.edge_test(i,a)
                 #print((self.G.get_edge_data(i,a)))
                 print("Spread chance without multiplying weight", self.misinformation[i]['spread_chance'])
-                if self.random.random() < self.misinformation[i]['spread_chance']*self.G[self.pos][a.pos]['weight']:
+                #weight_check=(self.misinformation[i]['spread_chance']*self.G[self.pos][a.pos]['weight'])
+                #print("Spread chance while multiplying weight", weight_check)
+                if self.random.random() < (self.misinformation[i]['spread_chance']*self.G[self.pos][a.pos]['weight']):
                     print("Spread chance while multiplying weight", (self.misinformation[i]['spread_chance']*self.G[self.pos][a.pos]['weight']))
                     if self.random.random() > self.misinformation[i]['skeptical_level']:
                         a.misinformation[i]['infected'] = 'yes'
@@ -549,3 +577,4 @@ class VirusAgent(mesa.Agent, VirusOnNetwork):
         for i in self.misinformation:
             if i < self.misinformation[0]['num_virus']:
                 self.try_check_situation(i)
+    
