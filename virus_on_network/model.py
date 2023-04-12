@@ -45,6 +45,12 @@ class VirusOnNetwork(mesa.Model):
             virus=0,
             num_nodes=10,
             avg_node_degree=3,
+            infected_virus_0='no',
+            infected_virus_1='no',
+            infected_virus_2='no',
+            exposed_virus_0='no',
+            exposed_virus_1='no',
+            exposed_virus_2='no',
             initial_outbreak_size_virus_0=1,
             initial_outbreak_size_virus_1=1,
             initial_outbreak_size_virus_2=1,
@@ -100,6 +106,18 @@ class VirusOnNetwork(mesa.Model):
         self.schedule = mesa.time.RandomActivation(self)
         self.j = j
         self.virus = virus
+        '''self.infected_virus_0 = infected_virus_0
+        self.misinformation[0]['infected']=infected_virus_0
+        self.infected_virus_1 = infected_virus_1
+        self.misinformation[1]['infected']=infected_virus_1
+        self.infected_virus_2 = infected_virus_2
+        self.misinformation[2]['infected']=infected_virus_2
+        self.exposed_virus_0 = exposed_virus_0
+        self.misinformation[0]['exposed']=exposed_virus_0
+        self.exposed_virus_1 = exposed_virus_1
+        self.misinformation[1]['exposed']=exposed_virus_1
+        self.exposed_virus_2 = exposed_virus_2
+        self.misinformation[2]['exposed']=exposed_virus_2'''
         self.initial_outbreak_size_virus_0 = initial_outbreak_size_virus_0
         self.misinformation[0]['initial_outbreak_size'] = (
             initial_outbreak_size_virus_0 if initial_outbreak_size_virus_0 <= num_nodes else num_nodes
@@ -170,6 +188,12 @@ class VirusOnNetwork(mesa.Model):
                 self.G,
                 self.j,
                 self.virus,
+                #self.infected_virus_0,
+                #self.infected_virus_1,
+                #self.infected_virus_2,
+                #self.exposed_virus_0,
+                #self.exposed_virus_1,
+                #self.exposed_virus_2,
                 self.initial_outbreak_size_virus_0,
                 self.initial_outbreak_size_virus_1,
                 self.initial_outbreak_size_virus_2,
@@ -251,14 +275,14 @@ class VirusOnNetwork(mesa.Model):
             for node in G.nodes:
                 neigh=G.neighbors(node)
                 num_of_node_neighbors=len(list(neigh))
-                list_of_weights=np.random.power(1, num_of_node_neighbors)
+                list_of_weights=np.random.exponential(.5, num_of_node_neighbors)
                 for i,neighbor in enumerate(G.neighbors(node)):
                     #powerlaw distribution 
                     G[node][neighbor]['weight']=list_of_weights[i]
                     #uniform distribution
                     #G[node][neighbor]['weight']=np.random.power(1, num_of_node_neighbors)
 
-                    print(G[node][neighbor]['weight'])
+                    #print(G[node][neighbor]['weight'])
 
         #print("\nNumber of Edges pre bidirectional")
         #print(self.G.number_of_edges())                    
@@ -390,6 +414,7 @@ class VirusOnNetwork(mesa.Model):
                                     f.write(', ')
                                     f.write(str(self.infected_nodes(i)))
                                     f.write(',\n')
+                                    
 
                         for i in self.misinformation:
                             if i < self.misinformation[0]['num_virus']:
@@ -403,7 +428,7 @@ class VirusOnNetwork(mesa.Model):
                                     e.write(', ')
                                     e.write(str(self.exposed_nodes(i)))
                                     e.write(',\n')
-
+                                   
 
                         for i in self.misinformation:
                             if i < self.misinformation[0]['num_virus']:
@@ -420,7 +445,7 @@ class VirusOnNetwork(mesa.Model):
     def run_model(self, n):
         for i in range(n):
             self.step()
-
+            
 class VirusAgent(mesa.Agent, VirusOnNetwork):
 
     def __init__(
@@ -430,6 +455,12 @@ class VirusAgent(mesa.Agent, VirusOnNetwork):
             VirusOnNetwork,
             j,
             virus,
+            #infected_virus_0,
+            #infected_virus_1,
+            #infected_virus_2,
+            #exposed_virus_0,
+            #exposed_virus_1,
+            #exposed_virus_2,
             initial_outbreak_size_virus_0,
             initial_outbreak_size_virus_1,
             initial_outbreak_size_virus_2,
@@ -463,6 +494,12 @@ class VirusAgent(mesa.Agent, VirusOnNetwork):
         self.virus = virus
         self.G=VirusOnNetwork
         self.misinformation[0]['num_virus'] = j
+        '''self.misinformation[0]['infected']=infected_virus_0
+        self.misinformation[1]['infected']=infected_virus_1
+        self.misinformation[2]['infected']=infected_virus_2
+        self.misinformation[0]['exposed']=exposed_virus_0
+        self.misinformation[1]['exposed']=exposed_virus_1
+        self.misinformation[2]['exposed']=exposed_virus_2'''
         self.misinformation[0]['initial_outbreak_size'] = initial_outbreak_size_virus_0
         self.misinformation[1]['initial_outbreak_size'] = initial_outbreak_size_virus_1
         self.misinformation[2]['initial_outbreak_size'] = initial_outbreak_size_virus_2
@@ -517,16 +554,16 @@ class VirusAgent(mesa.Agent, VirusOnNetwork):
                 #print(a.pos)
                 #self.edge_test(i,a)
                 #print((self.G.get_edge_data(i,a)))
-                print("Spread chance without multiplying weight", self.misinformation[i]['spread_chance'])
+                #print("Spread chance without multiplying weight", self.misinformation[i]['spread_chance'])
                 #weight_check=(self.misinformation[i]['spread_chance']*self.G[self.pos][a.pos]['weight'])
                 #print("Spread chance while multiplying weight", weight_check)
                 if self.random.random() < (self.misinformation[i]['spread_chance']*self.G[self.pos][a.pos]['weight']):
-                    print("Spread chance while multiplying weight", (self.misinformation[i]['spread_chance']*self.G[self.pos][a.pos]['weight']))
+                    #print("Spread chance while multiplying weight", (self.misinformation[i]['spread_chance']*self.G[self.pos][a.pos]['weight']))
                     if self.random.random() > self.misinformation[i]['skeptical_level']:
                         a.misinformation[i]['infected'] = 'yes'
                         a.misinformation[0]['infected_list'].append(("infected by node:", self.pos, "with virus", i))
                         print()
-                        print(a.unique_id, a.misinformation[0]['infected_list'])
+                        #print(a.unique_id, a.misinformation[0]['infected_list'])
                         
                         with open('infected_by.csv', 'a') as f:
                             #f.write("Step ")
