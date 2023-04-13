@@ -269,25 +269,49 @@ class VirusOnNetwork(mesa.Model):
                         f.write(',\n')
                    
                 print("length of weighted edge list")
-                print(len(weighted_list)) '''  
+                print(len(weighted_list)) ''' 
+         
+        with open('weighted_edgelist.csv', 'w') as f:
+            def create_bidirectional_edge_weights(G):
+                for node in G.nodes:
+                    neigh=G.neighbors(node)
+                    num_of_node_neighbors=len(list(neigh))
+                    #list_of_weights=np.random.exponential(.5, num_of_node_neighbors)
+                    list_of_weights=np.random.power(1, num_of_node_neighbors)
+                    #list_of_weights=np.random.lognormal(.5,.5, num_of_node_neighbors)
+                    for i,neighbor in enumerate(G.neighbors(node)):
+                        #powerlaw distribution 
+                        G[node][neighbor]['weight']=list_of_weights[i]
+                        #uniform distribution
+                        G[node][neighbor]['weight']=(G[node][neighbor]['weight']*1.1)
 
-        def create_bidirectional_edge_weights(G):
-            for node in G.nodes:
-                neigh=G.neighbors(node)
-                num_of_node_neighbors=len(list(neigh))
-                list_of_weights=np.random.exponential(.5, num_of_node_neighbors)
-                for i,neighbor in enumerate(G.neighbors(node)):
-                    #powerlaw distribution 
-                    G[node][neighbor]['weight']=list_of_weights[i]
-                    #uniform distribution
-                    #G[node][neighbor]['weight']=np.random.power(1, num_of_node_neighbors)
-
+                        with open('weighted_edgelist.csv', 'a') as f:
+                            f.write('('+str(node)+ ','+str(neighbor)+')')
+                            f.write(',')
+                            f.write(str(G[int(node)][int(neighbor)]['weight']))                       
+                            f.write(',\n')
                     #print(G[node][neighbor]['weight'])
 
+        def get_average_edge_weights(G):
+            weight=0
+            for edge in G.edges:
+                edge_string = str(edge)[1:-1]
+                node_1=str(edge_string.split(',')[0])
+                node_2=str(edge_string.split(',')[-1])
+                node_1=int(node_1)
+                node_2=int(node_2)
+                
+                weight=(G[node_1][node_2]['weight']) + weight
+                print("new weight", (weight/(len(G.edges))))
+            #print(len(G.edges))
+                
+
+        
         #print("\nNumber of Edges pre bidirectional")
         #print(self.G.number_of_edges())                    
         #create_bidirectional_edges(self.G)
         create_bidirectional_edge_weights(self.G)
+        get_average_edge_weights(self.G)
         #print("Number of Edges")
         #print(self.G.number_of_edges())
         
